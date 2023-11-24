@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        canvas {
+            border: 1px solid #000;
+            display: block;
+            margin: 20px auto;
+        }
+    </style>
+    <title>Moving "R" Character</title>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const tileSize = 50; // Size of each tile
+    const gridWidth = canvas.width / tileSize;
+    const gridHeight = canvas.height / tileSize;
+
+    let player = {
+        x: Math.floor(gridWidth / 2) * tileSize,
+        y: Math.floor(gridHeight / 2) * tileSize,
+        size: 50,
+        speed: 5
+    };
+
+    let selectedTiles = []; // Array to store selected tiles
+    let isSpacePressed = false;
+
+    //Variable for tracking where potatoes are planted
+    let plantedTiles = [];
+
+
+
+    let movingCharacter = {
+        x: 0, // Initial x-coordinate
+        y: Math.floor(gridHeight / 2) * tileSize, // Initial y-coordinate on the center of the grid
+        size: 20,
+        speedX: 1, // Adjust the speed of the moving character
+        speedY: 1
+    };
+
+    let rabbits = [];
+
+    window.addEventListener('keydown', function (e){
+        if (e.key === ' ' && isSpacePressed) {
+            selectTile();
+        } else if (e.key.toLowerCase() === 'p') {
+            plantTile();
+        }
+    })
+
+    window.addEventListener('keydown', function (e) {
+        if (e.key === ' ') {
+            isSpacePressed = true;
+        }
+    });
+
+    window.addEventListener('keyup', function (e) {
+        if (e.key === ' ') {
+            isSpacePressed = false;
+        }
+    });
+
+    window.addEventListener('keydown', function (e) {
+        switch (e.key) {
+            case 'ArrowLeft':
+                if (player.x - player.speed >= 0) {
+                    player.x -= tileSize;
+                    if (isSpacePressed) {
+                        selectTile();
+                    }
+                }
+                break;
+            case 'ArrowRight':
+                if (player.x + player.size + player.speed < canvas.width) {
+                    player.x += tileSize;
+                    if (isSpacePressed) {
+                        selectTile();
+                    }
+                }
+                break;
+            case 'ArrowUp':
+                if (player.y - player.speed >= 0) {
+                    player.y -= tileSize;
+                    if (isSpacePressed) {
+                        selectTile();
+                    }
+                }
+                break;
+            case 'ArrowDown':
+                if (player.y + player.size + player.speed < canvas.height) {
+                    player.y += tileSize;
+                    if (isSpacePressed) {
+                        selectTile();
+                    }
+                }
+                break;
+        }
+    });
+
+    function drawGrid() {
+        ctx.strokeStyle = '#ccc';
+        for (let x = 0; x < canvas.width; x += tileSize) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+        }
+
+        for (let y = 0; y < canvas.height; y += tileSize) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+    }
+
+    function drawSelectedTiles() {
+        ctx.fillStyle = '#8B4513'; // Brown color
+        selectedTiles.forEach(tile => {
+            const x = tile.column * tileSize;
+            const y = tile.row * tileSize;
+            ctx.fillRect(x, y, tileSize, tileSize);
+        });
+
+        ctx.fillStyle = '#00FF00';
+        plantedTiles.forEach( tile => {
+            const x = tile.column * tileSize;
+            const y = tile.row * tileSize;
+            ctx.fillRect(x, y, tileSize, tileSize);
+        })
+    }
+
+    function drawMovingCharacter() {
+        ctx.fillStyle = '#808080'; // Gray color for the "R"
+        ctx.fillRect(movingCharacter.x, movingCharacter.y, movingCharacter.size, movingCharacter.size);
+    }
+
+    function moveCharacter() {
+        movingCharacter.x += movingCharacter.speedX;
+        movingCharacter.y += movingCharacter.speedY;
+
+        // Check if the rabbit has reached the right or left edge
+        if (movingCharacter.x + movingCharacter.size > canvas.width || movingCharacter.x < 0) {
+            movingCharacter.speedX = -movingCharacter.speedX; // Reflect the character horizontally
+        }
+
+        // Check if the rabbit has reached the top or bottom edge
+        if (movingCharacter.y + movingCharacter.size > canvas.height || movingCharacter.y < 0) {
+            movingCharacter.speedY = -movingCharacter.speedY; // Reflect the character vertically
+        }
+
+        const row = Math.floor(movingCharacter.y / tileSize);
+        const column = Math.floor(movingCharacter.x / tileSize);
+        const isTilePlanted = plantedTiles.some(t => t.row === row && t.column === column);
+
+        if (isTilePlanted) {
+            // Change the planted tile to brown
+            const index = plantedTiles.findIndex(t => t.row === row && t.column === column);
+            if (index !== -1) {
+                plantedTiles.splice(index, 1);
+                selectedTiles.push({ row, column }); // Move the planted tile to selected tiles
+            }
+        }
+
+        rabbits.forEach(rabbit => {
+            if (
+                movingCharacter.x < rabbit.x + rabbit.size &&
+                movingCharacter.x + movingCharacter.size > rabbit.x &&
+                movingCharacter.y < rabbit.y + rabbit.size &&
+                movingCharacter.y + movingCharacter.size > rabbit.y
+            ) {
+                // Handle collision, for example, reset the position of the independent character
+                rabbit.x = Math.random() * canvas.width;
+                rabbit.y = Math.random() * canvas.height;
+            }
+            creatRabbit()
+        });
+    }
+
+    function drawRabbits() {
+        ctx.fillStyle = '#808080'; // Gray color for the independent characters
+        rabbits.forEach(rabbit => {
+            ctx.fillRect(rabbit.x, rabbit.y, rabbit.size, rabbit.size);
+        });
+    }
+
+    function moveRabbits() {
+        rabbits.forEach(rabbit => {
+            rabbit.x += rabbit.speedX,
+            rabbit.y += rabbit.speedY
+
+            if (rabbit.x + rabbit.size > canvas.width || rabbit.x < 0) { rabbit.speedX = -rabbit.speedX}
+
+            if (rabbit.y + rabbit.size > canvas.height || rabbit.y < 0) { rabbit.speedY = -rabbit.speedY}
+        })
+    }
+
+
+    function plantTile() {
+        const row = Math.floor(player.y / tileSize);
+        const column = Math.floor(player.x / tileSize);
+
+        const isTilePlanted = plantedTiles.some(t => t.row === row && t.column == column);
+
+        if (!isTilePlanted) {
+            plantedTiles.push({row, column});
+        }
+    }
+
+    function createRabbit() {
+        const rabbit = {
+            x: 0,
+            y: 0,
+            size: 20,
+            speedX: Math.random() * 4 - 2,
+            speedY: Math.random() * 4 - 2
+        };
+        rabbits.push(rabbit);
+    }
+
+    createRabbit();
+
+    // let rabbit = {
+    //         x: 0,
+    //         y: 0,
+    //         size: 20,
+    //         speedX: Math.random() * 4 - 2,
+    //         speedY: Math.random() * 4 - 2
+    //     }
+
+    // rabbits.push(rabbit)
+    // for (let i =0; i < 5; i++){
+    //     createRabbit()
+    // }
+
+ 
+
+    function selectTile() {
+        const row = Math.floor(player.y / tileSize);
+        const column = Math.floor(player.x / tileSize);
+        const tile = { row, column };
+
+        // Check if the tile is already selected
+        const isTileSelected = selectedTiles.some(t => t.row === tile.row && t.column === tile.column);
+
+        // If the tile is not already selected, add it to the array
+        if (!isTileSelected) {
+            selectedTiles.push(tile);
+        }
+    }
+
+    function gameLoop() {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // createRabbit()
+
+        drawGrid();
+        drawSelectedTiles();
+        drawMovingCharacter();
+        moveCharacter();
+
+        drawRabbits();
+        moveRabbits();
+
+        ctx.fillStyle = '#0080ff';
+        ctx.fillRect(player.x, player.y, player.size, player.size);
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+</script>
+
+</body>
+</html>

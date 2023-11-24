@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        canvas {
+            border: 1px solid #000;
+            display: block;
+            margin: 20px auto;
+        }
+    </style>
+    <title>Simple Walking Game</title>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<script>
+    // Get the canvas and context
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Set up the player (stick figure) initial position and attributes
+    let player = {
+        x: canvas.width / 2 - 25, // initial x-coordinate
+        y: canvas.height / 2 - 25, // initial y-coordinate
+        size: 50, // player size
+        speed: 5 // player movement speed
+    };
+
+    // Handle keyboard input
+    window.addEventListener('keydown', function (e) {
+        switch (e.key) {
+            case 'ArrowLeft':
+                if (player.x - player.speed > 0) {
+                    player.x -= player.speed;
+                }
+                break;
+            case 'ArrowRight':
+                if (player.x + player.size + player.speed < canvas.width) {
+                    player.x += player.speed;
+                }
+                break;
+            case 'ArrowUp':
+                if (player.y - player.speed > 0) {
+                    player.y -= player.speed;
+                }
+                break;
+            case 'ArrowDown':
+                if (player.y + player.size + player.speed < canvas.height) {
+                    player.y += player.speed;
+                }
+                break;
+        }
+    });
+
+    // Update and render the game
+    function gameLoop() {
+        // Clear the canvas
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw the player (stick figure)
+        ctx.fillStyle = '#0080ff';
+        ctx.fillRect(player.x, player.y, player.size, player.size);
+
+        // Request the next animation frame
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Start the game loop
+    gameLoop();
+</script>
+
+</body>
+</html>
