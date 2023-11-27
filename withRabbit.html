@@ -139,52 +139,6 @@
         })
     }
 
-    function drawMovingCharacter() {
-        ctx.fillStyle = '#808080'; // Gray color for the "R"
-        ctx.fillRect(movingCharacter.x, movingCharacter.y, movingCharacter.size, movingCharacter.size);
-    }
-
-    function moveCharacter() {
-        movingCharacter.x += movingCharacter.speedX;
-        movingCharacter.y += movingCharacter.speedY;
-
-        // Check if the rabbit has reached the right or left edge
-        if (movingCharacter.x + movingCharacter.size > canvas.width || movingCharacter.x < 0) {
-            movingCharacter.speedX = -movingCharacter.speedX; // Reflect the character horizontally
-        }
-
-        // Check if the rabbit has reached the top or bottom edge
-        if (movingCharacter.y + movingCharacter.size > canvas.height || movingCharacter.y < 0) {
-            movingCharacter.speedY = -movingCharacter.speedY; // Reflect the character vertically
-        }
-
-        const row = Math.floor(movingCharacter.y / tileSize);
-        const column = Math.floor(movingCharacter.x / tileSize);
-        const isTilePlanted = plantedTiles.some(t => t.row === row && t.column === column);
-
-        if (isTilePlanted) {
-            // Change the planted tile to brown
-            const index = plantedTiles.findIndex(t => t.row === row && t.column === column);
-            if (index !== -1) {
-                plantedTiles.splice(index, 1);
-                selectedTiles.push({ row, column }); // Move the planted tile to selected tiles
-            }
-        }
-
-        rabbits.forEach(rabbit => {
-            if (
-                movingCharacter.x < rabbit.x + rabbit.size &&
-                movingCharacter.x + movingCharacter.size > rabbit.x &&
-                movingCharacter.y < rabbit.y + rabbit.size &&
-                movingCharacter.y + movingCharacter.size > rabbit.y
-            ) {
-                // Handle collision, for example, reset the position of the independent character
-                rabbit.x = Math.random() * canvas.width;
-                rabbit.y = Math.random() * canvas.height;
-            }
-            creatRabbit()
-        });
-    }
 
     function drawRabbits() {
         ctx.fillStyle = '#808080'; // Gray color for the independent characters
@@ -194,16 +148,83 @@
     }
 
     function moveRabbits() {
-        rabbits.forEach(rabbit => {
+        rabbits.forEach((rabbit, index) => {
             rabbit.x += rabbit.speedX,
             rabbit.y += rabbit.speedY
 
             if (rabbit.x + rabbit.size > canvas.width || rabbit.x < 0) { rabbit.speedX = -rabbit.speedX}
 
             if (rabbit.y + rabbit.size > canvas.height || rabbit.y < 0) { rabbit.speedY = -rabbit.speedY}
+        
+        
+            const row = Math.floor(rabbit.y / tileSize);
+            const column = Math.floor(rabbit.x / tileSize);
+            const isTilePlanted = plantedTiles.some(t => t.row === row && t.column === column);
+
+            if (isTilePlanted) {
+                // Change the planted tile to brown
+                const index = plantedTiles.findIndex(t => t.row === row && t.column === column);
+                if (index !== -1) {
+                    plantedTiles.splice(index, 1);
+                    selectedTiles.push({ row, column }); // Move the planted tile to selected tiles
+                }
+                rabbit.size += 10
+            }
+            let birth = false;
+
+            for (let i = 0; i < rabbits.length; i++) {
+                if (i !== index) {
+                    const otherRabbit = rabbits[i];
+
+                    if (
+                        rabbit.x < otherRabbit.x + otherRabbit.size &&
+                        rabbit.x + rabbit.size > otherRabbit.x &&
+                        rabbit.y < otherRabbit.y + otherRabbit.size &&
+                        rabbit.y + rabbit.size > otherRabbit.y &&
+                        rabbit.size > 20 &&
+                        otherRabbit.size > 20
+                    ) {
+                        // Handle collision by adjusting speeds
+                        rabbit.speedX = -rabbit.speedX;
+                        rabbit.speedY = -rabbit.speedY;
+                        birth = true
+                    }
+                }
+            }
+
+            if (birth === true && rabbits.length < 100){
+                createRabbit();
+                birth = false
+            }
+            //time to kill the farmer
+            if (plantedTiles.length === 0){
+                if (
+                    rabbit.x < player.x + player.size &&
+                    rabbit.x +rabbit.size > player.x &&
+                    rabbit.y < player.y + player.size &&
+                    rabbit.y + rabbit.size > player.y
+                ){
+                    player.size -= Math.floor(rabbit.size / 2);
+
+                    rabbit.speedX = -rabbit.speedX;
+                    rabbit.speedY = -rabbit.speedY;
+                }
+            }
         })
     }
 
+
+
+    function endGame() {
+        isGameOver = true;
+        // Display game over message
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#000';
+        ctx.font = '30px Arial';
+        ctx.fillText('The rabbits always win', canvas.width / 4, canvas.height / 2);
+    }
 
     function plantTile() {
         const row = Math.floor(player.y / tileSize);
@@ -216,9 +237,10 @@
         }
     }
 
-    function createRabbit() {
+    function createRabbit(a) {
+        a1 = a || 1
         const rabbit = {
-            x: 0,
+            x: Math.random() * canvas.width * a1,
             y: 0,
             size: 20,
             speedX: Math.random() * 4 - 2,
@@ -227,20 +249,10 @@
         rabbits.push(rabbit);
     }
 
-    createRabbit();
-
-    // let rabbit = {
-    //         x: 0,
-    //         y: 0,
-    //         size: 20,
-    //         speedX: Math.random() * 4 - 2,
-    //         speedY: Math.random() * 4 - 2
-    //     }
-
-    // rabbits.push(rabbit)
-    // for (let i =0; i < 5; i++){
-    //     createRabbit()
-    // }
+    //Starts game with two rabbits, necessary for reproduction.
+    for (let i =0; i < 2; i++){
+        createRabbit(i)
+    }
 
  
 
@@ -258,24 +270,33 @@
         }
     }
 
+
+    let isGameOver = false;
+
     function gameLoop() {
+
+        if (isGameOver) {
+            return;
+        }
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        // createRabbit()
 
         drawGrid();
         drawSelectedTiles();
-        drawMovingCharacter();
-        moveCharacter();
-
         drawRabbits();
         moveRabbits();
+
+        if (player.size === 0){
+            endgame();
+        }
 
         ctx.fillStyle = '#0080ff';
         ctx.fillRect(player.x, player.y, player.size, player.size);
 
         requestAnimationFrame(gameLoop);
     }
+
+
 
     gameLoop();
 </script>
