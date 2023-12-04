@@ -139,6 +139,52 @@
         })
     }
 
+    function drawMovingCharacter() {
+        ctx.fillStyle = '#808080'; // Gray color for the "R"
+        ctx.fillRect(movingCharacter.x, movingCharacter.y, movingCharacter.size, movingCharacter.size);
+    }
+
+    function moveCharacter() {
+        movingCharacter.x += movingCharacter.speedX;
+        movingCharacter.y += movingCharacter.speedY;
+
+        // Check if the rabbit has reached the right or left edge
+        if (movingCharacter.x + movingCharacter.size > canvas.width || movingCharacter.x < 0) {
+            movingCharacter.speedX = -movingCharacter.speedX; // Reflect the character horizontally
+        }
+
+        // Check if the rabbit has reached the top or bottom edge
+        if (movingCharacter.y + movingCharacter.size > canvas.height || movingCharacter.y < 0) {
+            movingCharacter.speedY = -movingCharacter.speedY; // Reflect the character vertically
+        }
+
+        const row = Math.floor(movingCharacter.y / tileSize);
+        const column = Math.floor(movingCharacter.x / tileSize);
+        const isTilePlanted = plantedTiles.some(t => t.row === row && t.column === column);
+
+        if (isTilePlanted) {
+            // Change the planted tile to brown
+            const index = plantedTiles.findIndex(t => t.row === row && t.column === column);
+            if (index !== -1) {
+                plantedTiles.splice(index, 1);
+                selectedTiles.push({ row, column }); // Move the planted tile to selected tiles
+            }
+        }
+
+        rabbits.forEach(rabbit => {
+            if (
+                movingCharacter.x < rabbit.x + rabbit.size &&
+                movingCharacter.x + movingCharacter.size > rabbit.x &&
+                movingCharacter.y < rabbit.y + rabbit.size &&
+                movingCharacter.y + movingCharacter.size > rabbit.y
+            ) {
+                // Handle collision, for example, reset the position of the independent character
+                rabbit.x = Math.random() * canvas.width;
+                rabbit.y = Math.random() * canvas.height;
+            }
+            createRabbit()
+        });
+    }
 
     function drawRabbits() {
         ctx.fillStyle = '#808080'; // Gray color for the independent characters
@@ -249,7 +295,17 @@
         rabbits.push(rabbit);
     }
 
-    //Starts game with two rabbits, necessary for reproduction.
+    // createRabbit();
+
+    // let rabbit = {
+    //         x: 0,
+    //         y: 0,
+    //         size: 20,
+    //         speedX: Math.random() * 4 - 2,
+    //         speedY: Math.random() * 4 - 2
+    //     }
+
+    // rabbits.push(rabbit)
     for (let i =0; i < 2; i++){
         createRabbit(i)
     }
@@ -271,29 +327,36 @@
     }
 
 
-    let isGameOver = false;
+    let isGame = true;
 
     function gameLoop() {
-
-        if (isGameOver) {
-            return;
+        if (player.size <= 0) {
+            isGame = false;
         }
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (isGame) {
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // createRabbit()
 
-        drawGrid();
-        drawSelectedTiles();
-        drawRabbits();
-        moveRabbits();
+            drawGrid();
+            drawSelectedTiles();
+            // drawMovingCharacter();
+            // moveCharacter();
 
-        if (player.size === 0){
-            endgame();
+            drawRabbits();
+            moveRabbits();
+
+            
+
+            ctx.fillStyle = '#0080ff';
+            ctx.fillRect(player.x, player.y, player.size, player.size);
+
+            requestAnimationFrame(gameLoop);
         }
-
-        ctx.fillStyle = '#0080ff';
-        ctx.fillRect(player.x, player.y, player.size, player.size);
-
-        requestAnimationFrame(gameLoop);
+        
+        if (!isGame){
+            endGame();
+        }
     }
 
 
